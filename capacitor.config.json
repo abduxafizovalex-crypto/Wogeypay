@@ -1,0 +1,7 @@
+{
+  "appId": "com.wogeypay.app",
+  "appName": "WogeyPay",
+  "webDir": "www",
+  "backgroundColor": "#0e1a1f",
+  "android": { "allowMixedContent": false }
+}
