@@ -95,7 +95,7 @@ nav button{font-size:12.5px}
 .tk .r b{text-align:right}
 .bc{height:38px;margin-top:14px;opacity:.8;background:repeating-linear-gradient(90deg,var(--tx) 0 2px,transparent 2px 4px,var(--tx) 4px 5px,transparent 5px 9px,var(--tx) 9px 12px,transparent 12px 14px);transform:scaleX(0);transform-origin:left;animation:scx .7s 2.8s ease forwards}
 .stamp{position:absolute;right:14px;bottom:62px;border:3px solid var(--up);color:var(--up);padding:4px 10px;border-radius:8px;font-weight:800;letter-spacing:2px;opacity:0;transform:rotate(-12deg);animation:stamp .5s 3.1s cubic-bezier(.2,.9,.3,1) forwards}
-.rbtn{display:flex;gap:10px;width:100%;padding:14px 16px 28px;opacity:0;animation:rise .5s 3.2s forwards}
+.rbtn{display:flex;flex-wrap:wrap;gap:10px;width:100%;padding:14px 16px 28px;opacity:0;animation:rise .5s 3.2s forwards}
 button,.row,.li,.gi,.av{position:relative;overflow:hidden;-webkit-tap-highlight-color:transparent}
 button,.row,.gi,.av{transition:transform .18s cubic-bezier(.3,1.6,.5,1)}
 button:active,.row:active,.gi:active,.av:active{transform:scale(.95)}
@@ -589,11 +589,12 @@ function showReceipt(o){
  const no=o.no||'WP-'+Date.now().toString().slice(-8),d=o.d||new Date().toLocaleString('uz-UZ');
  const rows=[[`Amal`,o.t],[o.k==='in'?`Izoh`:`Qabul qiluvchi`,o.r||'—'],[`Yuboruvchi`,(st.user&&st.user.name)||'—'],[`Sana`,d],[`Chek raqami`,no],[`Komissiya`,o.fee||"0 so'm"],[`Holat`,`Muvaffaqiyatli`]];
  const cf=Array.from({length:30},(_,i)=>{const a=Math.random()*6.283,r=90+Math.random()*110;return `<i class="cf" style="--dx:${Math.cos(a)*r}px;--dy:${Math.sin(a)*r-40}px;--r:${Math.random()*720-360}deg;background:${['#3de0b0','#ffd166','#ff6b6b','#6ec1ff','#fff'][i%5]};animation-delay:${.8+Math.random()*.15}s"></i>`}).join('');
- $('#rcpt').innerHTML=`<div class="sv"><div class="rip"></div>${cf}<svg class="ok" viewBox="0 0 120 120"><circle class="c1" cx="60" cy="60" r="52"/><path class="ck" d="M36 62L54 80L86 42"/></svg></div><div class="rt">${o.k==='in'?`Qabul qilindi`:`To'lov amalga oshdi`}</div><div class="ra" id="rA">0 so'm</div><div class="tk">${rows.map((x,i)=>`<div class="r" style="animation-delay:${2+i*.1}s"><span class="mu">${x[0]}</span><b>${x[1]}</b></div>`).join('')}<div class="bc"></div><div class="stamp">TO'LANDI</div></div><div class="rbtn"><button class="go" id="rOk">Tayyor</button><button class="go" id="rCp" style="background:var(--sf);color:var(--tx);border:1px solid var(--ln)">Nusxalash</button></div>`;
+ $('#rcpt').innerHTML=`<div class="sv"><div class="rip"></div>${cf}<svg class="ok" viewBox="0 0 120 120"><circle class="c1" cx="60" cy="60" r="52"/><path class="ck" d="M36 62L54 80L86 42"/></svg></div><div class="rt">${o.k==='in'?`Qabul qilindi`:`To'lov amalga oshdi`}</div><div class="ra" id="rA">0 so'm</div><div class="tk">${rows.map((x,i)=>`<div class="r" style="animation-delay:${2+i*.1}s"><span class="mu">${x[0]}</span><b>${x[1]}</b></div>`).join('')}<div class="bc"></div><div class="stamp">TO'LANDI</div></div><div class="rbtn"><button class="go" id="rPdf" style="flex:1 1 100%;width:auto">📄 PDF yuklab olish</button><button class="go" id="rOk" style="flex:1 1 0;width:auto">Tayyor</button><button class="go" id="rCp" style="flex:1 1 0;width:auto;background:var(--sf);color:var(--tx);border:1px solid var(--ln)">Nusxalash</button></div>`;
  const R=$('#rcpt');R.scrollTop=0;R.classList.remove('hide');sfx.pay();
  const el=$('#rA'),t0=performance.now()+1100;
  const tick=n=>{const p=Math.min(Math.max((n-t0)/900,0),1);el.textContent=(o.k==='in'?'+':'−')+fmtU(o.a*(1-Math.pow(1-p,3)));if(p<1&&!R.classList.contains('hide'))requestAnimationFrame(tick)};requestAnimationFrame(tick);
  $('#rOk').onclick=()=>R.classList.add('hide');
+ $('#rPdf').onclick=()=>savePdf(o,rows,no,d);
  $('#rCp').onclick=()=>{try{navigator.clipboard.writeText(rows.map(x=>x[0]+': '+x[1]).join(' | ')+' | Summa: '+fmtU(o.a));toast('Chek nusxalandi')}catch(e){toast('Nusxalab bo\'lmadi')}}}
 $('#aboutL').onclick=e=>{if(e.target.id==='cp'){try{navigator.clipboard.writeText('+998945742454');toast('Raqam nusxalandi')}catch(x){toast('+998 94 574 24 54')}return}
  const h=e.target.closest('.ah');if(h)h.closest('.ab').classList.toggle('on')};
@@ -915,10 +916,99 @@ function payFx(o,done){paying=true;const inn=o.k==='in',nm=(st.user&&st.user.nam
  document.body.appendChild(el);
  const q=s=>el.querySelector(s),bar=q('.px-bar i'),rows=[...el.querySelectorAll('.px-s')],t0=performance.now(),el_=()=>((performance.now()-t0)/1000).toFixed(1)+' s';
  const ok=i=>{const r=rows[i];r.classList.remove('s-on');r.classList.add('s-ok');r.querySelector('em').textContent=el_();if(after[i])r.querySelector('small').textContent=after[i]};
- const act=i=>{if(i)ok(i-1);rows[i].classList.add('s-on');bar.style.width=[18,46,76,92][i]+'%';try{i?sfx.pick():sfx.open()}catch(e){}};
- [0,1000,2100,3100].forEach((ms,i)=>setTimeout(()=>act(i),ms));
- setTimeout(()=>{ok(3);bar.style.width='100%';el.classList.add('fin');q('.px-lt').textContent=inn?'Hisob to‘ldirildi':'To‘lov tasdiqlandi';try{sfx.faceid()}catch(e){}
-  setTimeout(()=>{try{done()}finally{const a=el.animate([{opacity:1},{opacity:0}],{duration:380,fill:'forwards'});a.onfinish=()=>{el.remove();paying=false}}},1000)},3950)}
+ const SND=[()=>sfx.pStart(),()=>sfx.pLock(),()=>sfx.pSync(),()=>sfx.pXfer(5.6)];
+ const act=i=>{if(i)ok(i-1);rows[i].classList.add('s-on');bar.style.width=[18,46,70,80][i]+'%';try{SND[i]()}catch(e){}};
+ /* 4-bosqich (mablag‘ o‘tkazilmoqda) ataylab uzoqroq turadi */
+ const T=[0,1100,2300,3500],XF=5600,END=T[3]+XF;
+ T.forEach((ms,i)=>setTimeout(()=>act(i),ms));
+ const sub=inn?['Balansga yozilmoqda','Ledger yangilanmoqda','Yozuv tekshirilmoqda','Yakuniy tasdiqlash']:['Qabul qiluvchi hisobiga yozilmoqda','Mablag‘ qabul qiluvchi bankiga yo‘naltirilmoqda','Qabul qiluvchi banki tasdiqlamoqda','Yakuniy tekshiruv'];
+ [1,2,3].forEach(k=>setTimeout(()=>{if(rows[3].classList.contains('s-ok'))return;rows[3].querySelector('small').textContent=sub[k];bar.style.width=[0,86,92,96][k]+'%'},T[3]+k*XF/4));
+ setTimeout(()=>{ok(3);bar.style.width='100%';el.classList.add('fin');q('.px-lt').textContent=inn?'Hisob to‘ldirildi':'To‘lov tasdiqlandi';try{sfx.pDone()}catch(e){}
+  setTimeout(()=>{try{done()}finally{const a=el.animate([{opacity:1},{opacity:0}],{duration:380,fill:'forwards'});a.onfinish=()=>{el.remove();paying=false}}},1400)},END)}
+
+/* ===== v4: to‘lovga mos original ovozlar (whoosh yo‘q) ===== */
+function nbuf(a){if(!NB){NB=a.createBuffer(1,a.sampleRate,a.sampleRate);const c=NB.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=Math.random()*2-1}return NB}
+function tk(t0,f,d,v,Q){const a=ac();if(!a||st.set.snd===false)return;const T=a.currentTime+t0,s=a.createBufferSource(),fl=a.createBiquadFilter(),g=a.createGain();s.buffer=nbuf(a);s.loop=true;fl.type='bandpass';fl.frequency.value=f;fl.Q.value=Q||5;g.gain.setValueAtTime(v,T);g.gain.exponentialRampToValueAtTime(.0001,T+d);s.connect(fl);fl.connect(g);g.connect(a.destination);s.start(T,Math.random()*.5);s.stop(T+d+.03)}
+function bell(f,t0,d,v){tone(f,t0,d,'sine',v);tone(f*2.76,t0,d*.55,'sine',v*.35);tone(f*5.4,t0,d*.3,'sine',v*.18)}
+Object.assign(sfx,{
+ /* 1: ma’lumot tekshiruvi — ikki qisqa raqamli “bip-bop” */
+ pStart(){tone(880,0,.09,'square',.035);tone(1320,.11,.12,'square',.035)},
+ /* 2: xavfsiz ulanish — seyf qulfi: tik + past “klak” */
+ pLock(){tk(0,2600,.03,.16,8);tone(180,.04,.14,'sine',.2,90);tk(.16,1400,.05,.14,6);bell(1568,.2,.35,.05)},
+ /* 3: bank bilan qo‘l siqish — ikki pog‘onali ko‘tariluvchi ping */
+ pSync(){[660,880,1175].forEach((f,i)=>bell(f,i*.12,.28,.06));tone(1760,.42,.2,'triangle',.04)},
+ /* 4: pul sanash mashinasi — tez-tez “trrrr” + ko‘tariluvchi ohang */
+ pXfer(D){D=D||5.6;let t=0,g=.17,n=0;while(t<D-.3){tk(t,3200+Math.random()*1400,.02,.07+Math.min(n,40)*.0012,7);t+=g;g=Math.max(.055,g*.955);n++}
+  tone(196,0,D,'sine',.03,392);tone(294,.3,D-.3,'sine',.02,588);
+  for(let k=0;k<5;k++)bell(1175+k*180,.9+k*1.05,.22,.035)},
+ /* yakun: “ka-ching” kassa qo‘ng‘irog‘i + tanga yomg‘iri + muvaffaqiyat akkordi */
+ pDone(){tk(0,1800,.04,.18,6);tone(150,0,.12,'sine',.25,70);
+  bell(1976,.08,.55,.1);bell(2637,.19,1.1,.1);
+  [0,1,2,3,4,5].forEach(i=>bell(3100+Math.random()*1400,.45+i*.07+Math.random()*.03,.14,.03));
+  [523,659,784,1047].forEach((f,i)=>tone(f,.55+i*.1,.8,'triangle',.06))},
+ /* chek ochilishi: kvitansiya printeri + muhr “shtamp” */
+ pay(){bell(1568,0,.5,.07);[784,988,1175,1568].forEach((f,i)=>tone(f,.9+i*.09,.7,'triangle',.07));tone(1047,.9,.9,'sine',.05);
+  for(let i=0;i<14;i++)tk(1.9+i*.055,4200,.018,.06,9);
+  tone(95,3.1,.28,'sine',.38,42);tk(3.1,900,.07,.2,2);bell(2349,3.18,.5,.05)}
+});
+
+
+/* ===== v4: chekni PDF qilib yuklab olish (kutubxonasiz) ===== */
+function rcCanvas(o,rows,no,d){
+ const K=3,W=400*K,pad=28*K,cv=document.createElement('canvas'),inn=o.k==='in';
+ const F=(w,sz)=>`${w} ${sz*K}px "Trebuchet MS","Segoe UI",Arial,sans-serif`;
+ const meas=cv.getContext('2d');
+ /* qiymat qatorlarini o‘rash (uzun matn bo‘lsa) */
+ const wrap=(ctx,t,mw)=>{const w=String(t).split(/(\s+)/),L=[];let c='';w.forEach(x=>{if(ctx.measureText(c+x).width>mw&&c.trim()){L.push(c.trim());c=x.trimStart()}else c+=x});if(c.trim())L.push(c.trim());return L.length?L:['—']};
+ meas.font=F('700',13);
+ const rr=rows.map(r=>({a:r[0],b:wrap(meas,r[1],W-2*pad-150*K)}));
+ const rowsH=rr.reduce((h,r)=>h+Math.max(1,r.b.length)*17*K+16*K,0);
+ const H=Math.round(250*K+rowsH+150*K);
+ cv.width=W;cv.height=H;const c=cv.getContext('2d');
+ c.fillStyle='#fff';c.fillRect(0,0,W,H);
+ /* sarlavha */
+ const g=c.createLinearGradient(0,0,W,230*K);g.addColorStop(0,'#0e1a1f');g.addColorStop(1,'#17363d');c.fillStyle=g;c.fillRect(0,0,W,210*K);
+ c.textBaseline='alphabetic';c.font=F('800',24);c.fillStyle='#fff';c.fillText('Wogey',pad,52*K);const w1=c.measureText('Wogey').width;c.fillStyle='#3de0b0';c.fillText('Pay',pad+w1,52*K);
+ c.font=F('400',10.5);c.fillStyle='#84a0a6';c.fillText('Global World Payment system',pad,70*K);
+ c.textAlign='right';c.font=F('700',11);c.fillStyle='#84a0a6';c.fillText('TO‘LOV CHEKI',W-pad,46*K);c.font=F('700',13);c.fillStyle='#e8f1f2';c.fillText('№ '+no,W-pad,66*K);c.textAlign='left';
+ /* yashil belgi */
+ const cx=W/2,cy=118*K;c.beginPath();c.arc(cx,cy,26*K,0,7);c.fillStyle='#3de0b0';c.fill();
+ c.strokeStyle='#06201a';c.lineWidth=4*K;c.lineCap='round';c.lineJoin='round';c.beginPath();c.moveTo(cx-11*K,cy+1*K);c.lineTo(cx-3*K,cy+9*K);c.lineTo(cx+12*K,cy-9*K);c.stroke();
+ c.textAlign='center';c.font=F('700',13);c.fillStyle='#e8f1f2';c.fillText(inn?'Qabul qilindi':'To‘lov amalga oshdi',cx,172*K);
+ c.font=F('800',28);c.fillStyle='#3de0b0';c.fillText((inn?'+':'−')+fmtU(o.a).replace(/\u00a0/g,' '),cx,202*K);c.textAlign='left';
+ /* qatorlar */
+ let y=236*K;c.font=F('700',13);
+ rr.forEach(r=>{const h=Math.max(1,r.b.length)*17*K;c.font=F('400',12);c.fillStyle='#5d7a80';c.textAlign='left';c.fillText(r.a,pad,y+12*K);
+  c.font=F('700',13);c.fillStyle=r.a==='Holat'?'#0c9e78':'#0f2328';c.textAlign='right';r.b.forEach((l,i)=>c.fillText(l,W-pad,y+12*K+i*17*K));
+  y+=h+16*K;c.strokeStyle='#d9e6e8';c.lineWidth=1*K;c.setLineDash([3*K,3*K]);c.beginPath();c.moveTo(pad,y-8*K);c.lineTo(W-pad,y-8*K);c.stroke();c.setLineDash([])});
+ c.textAlign='left';
+ /* shtrix-kod */
+ const by=y+8*K;c.fillStyle='#0f2328';let x=pad;const seed=no.replace(/\D/g,'')||'1';let i=0;
+ while(x<W-pad){const n=+seed[i%seed.length]||1,w=(1+(n+i)%3)*K;c.fillRect(x,by,w,34*K);x+=w+(1+(n*3+i)%3)*K;i++}
+ /* muhr */
+ c.save();c.translate(W-pad-52*K,by-26*K);c.rotate(-.2);c.strokeStyle='#0c9e78';c.fillStyle='#0c9e78';c.lineWidth=3*K;c.beginPath();c.roundRect?c.roundRect(-46*K,-14*K,92*K,28*K,6*K):c.rect(-46*K,-14*K,92*K,28*K);c.stroke();c.font=F('800',12);c.textAlign='center';c.fillText('TO‘LANDI',0,5*K);c.restore();
+ c.textAlign='center';c.font=F('400',9.5);c.fillStyle='#84a0a6';c.fillText('Ushbu chek WogeyPay tizimida avtomatik shakllantirilgan.',W/2,by+58*K);c.fillText('wogeypay · '+d,W/2,by+72*K);
+ return cv}
+function pdfBlob(cv){
+ const jpg=atob(cv.toDataURL('image/jpeg',.95).split(',')[1]),n=jpg.length,iw=cv.width,ih=cv.height,pw=400,ph=Math.round(ih/cv.width*400*100)/100;
+ const enc=t=>{const u=new Uint8Array(t.length);for(let i=0;i<t.length;i++)u[i]=t.charCodeAt(i)&255;return u};
+ const parts=[],off=[];let len=0;const add=x=>{const u=typeof x==='string'?enc(x):x;parts.push(u);len+=u.length};
+ const obj=(i,body)=>{off[i]=len;add(i+' 0 obj\n'+body+'\nendobj\n')};
+ add('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+ obj(1,'<< /Type /Catalog /Pages 2 0 R >>');
+ obj(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+ obj(3,`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pw} ${ph}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+ off[4]=len;add(`4 0 obj\n<< /Type /XObject /Subtype /Image /Width ${iw} /Height ${ih} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${n} >>\nstream\n`);add(enc(jpg));add('\nendstream\nendobj\n');
+ const cs=`q ${pw} 0 0 ${ph} 0 0 cm /Im0 Do Q`;obj(5,`<< /Length ${cs.length} >>\nstream\n${cs}\nendstream`);
+ obj(6,'<< /Title (WogeyPay chek) /Producer (WogeyPay) >>');
+ const xr=len;let t='xref\n0 7\n0000000000 65535 f \n';for(let i=1;i<=6;i++)t+=String(off[i]).padStart(10,'0')+' 00000 n \n';
+ add(t+`trailer\n<< /Size 7 /Root 1 0 R /Info 6 0 R >>\nstartxref\n${xr}\n%%EOF`);
+ return new Blob(parts,{type:'application/pdf'})}
+function savePdf(o,rows,no,d){
+ try{const b=pdfBlob(rcCanvas(o,rows,no,d)),u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download='WogeyPay-chek-'+no+'.pdf';document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),60000);toast('Chek PDF yuklab olindi');try{sfx.pick()}catch(e){}}
+ catch(e){toast('PDF yaratib bo‘lmadi')}}
 
 applyUser();
 show('home');
